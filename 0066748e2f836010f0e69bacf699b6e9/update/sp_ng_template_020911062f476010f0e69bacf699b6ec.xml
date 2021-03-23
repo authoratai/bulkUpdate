@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_ng_template">
+    <sp_ng_template action="INSERT_OR_UPDATE">
+        <id>nuvo-collapsible-panel</id>
+        <sp_widget display_value="Bulk Update">f31301ce2fc36010f0e69bacf699b6d5</sp_widget>
+        <sys_class_name>sp_ng_template</sys_class_name>
+        <sys_created_by>sean</sys_created_by>
+        <sys_created_on>2021-03-23 18:06:06</sys_created_on>
+        <sys_id>020911062f476010f0e69bacf699b6ec</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>nuvo-collapsible-panel</sys_name>
+        <sys_package display_value="Bulk Update" source="x_441625_bulk">0066748e2f836010f0e69bacf699b6e9</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Bulk Update">0066748e2f836010f0e69bacf699b6e9</sys_scope>
+        <sys_update_name>sp_ng_template_020911062f476010f0e69bacf699b6ec</sys_update_name>
+        <sys_updated_by>sean</sys_updated_by>
+        <sys_updated_on>2021-03-23 18:06:06</sys_updated_on>
+        <template><![CDATA[<div class="panel panel-default" ng-class="{ checklist: panel.isChecklist }">
+  <div class="panel-heading">
+    <div class="flex-row justify-between items-center">
+      <div class="panel-title">{{panel.title}}</div>
+      <a class="btn btn-link" ng-click="panel.isCollapsed = !panel.isCollapsed">
+        <span class="fa fa-chevron-down"></span>
+      </a>
+    </div>
+  </div>
+  <div class="panel-body" id="{{panel.id}}">
+    <div ng-transclude></div>
+  </div>
+</div>]]></template>
+    </sp_ng_template>
+</record_update>

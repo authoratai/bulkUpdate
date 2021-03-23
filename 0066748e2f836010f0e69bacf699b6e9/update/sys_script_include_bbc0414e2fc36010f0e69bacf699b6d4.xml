@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_441625_bulk.BulkUpdate</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <name>BulkUpdate</name>
+        <script><![CDATA[var BulkUpdate = function () {
+  return {
+    getDeviceById: getDeviceById,
+    getWorkOrderById: getWorkOrderById,
+    getWorkOrderInfo: getWorkOrderInfo,
+    getWorkOrdersByIds: getWorkOrdersByIds,
+    getWorkOrdersByQuery: getWorkOrdersByQuery,
+    updateWorkOrders: updateWorkOrders,
+    type: 'BulkUpdate',
+  };
+
+  function getDeviceById(deviceTable, deviceId) {
+    var deviceGr = new GlideRecord(deviceTable);
+
+    if (deviceGr.get(deviceId)) {
+      return {
+        modelNumber: _getDeviceModelNumber(deviceGr),
+        manufacturer: _getDeviceManufacturer(deviceGr),
+        serialNumber: deviceGr.getValue('serial_number'),
+      };
+    }
+  }
+
+  function _getDeviceModelNumber(deviceGr) {
+    var modelGr = new GlideRecord('x_nuvo_eam_models');
+
+    if (modelGr.get(deviceGr.getValue('model_name'))) {
+      return modelGr.getValue('name');
+    }
+  }
+
+  function _getDeviceManufacturer(deviceGr) {
+    var manufacturerGr = new GlideRecord('x_nuvo_eam_company');
+
+    if (manufacturerGr.get(deviceGr.getValue('asset_manufacturer'))) {
+      return manufacturerGr.getValue('name');
+    }
+  }
+
+  function getWorkOrderById(workOrderTable, workOrderId) {
+    var workOrderGr = new GlideRecord(workOrderTable);
+
+    if (workOrderGr.get(workOrderId)) {
+      return workOrderGr;
+    }
+  }
+
+  function getWorkOrderInfo(workOrderTable, workOrderIds, workOrderQuery) {
+    var info = {
+      partLocationTable: 'x_nuvo_eam_m2m_stockrooms_parts',
+      partLocationLabel: 'Stockroom',
+      checklists: [],
+    };
+
+    if (_isWarehouseEnabled()) {
+      info.partLocationTable = 'x_nuvo_wm_m2m_parts_bins';
+      info.partLocationLabel = 'Bin';
+    }
+
+    if (workOrderTable == 'x_nuvo_eam_clinical_work_orders') {
+      info.deviceTable = 'x_nuvo_eam_clinical_devices';
+      info.partTable = 'x_nuvo_eam_clinical_parts';
+      info.problemCauseTable = 'x_nuvo_eam_clinical_problem_cause';
+      info.resolutionCodeTable = 'x_nuvo_eam_clinical_resolution_code';
+    } else if (workOrderTable == 'x_nuvo_eam_facilities_work_orders') {
+      info.deviceTable = 'x_nuvo_eam_facilities_devices';
+      info.partTable = 'x_nuvo_eam_facilities_parts';
+      info.problemCauseTable = 'x_nuvo_eam_facilities_problem_cause';
+      info.resolutionCodeTable = 'x_nuvo_eam_facilities_resolution_code';
+    } else if (workOrderTable == 'x_nuvo_eam_lab_work_orders') {
+      info.deviceTable = 'x_nuvo_eam_lab_devices';
+      info.partTable = 'x_nuvo_eam_lab_parts';
+      info.problemCauseTable = 'x_nuvo_eam_lab_problem_cause';
+      info.resolutionCodeTable = 'x_nuvo_eam_lab_resolution_code';
+    } else if (workOrderTable == 'x_nuvo_eam_manufacturing_work_orders') {
+      info.deviceTable = 'x_nuvo_eam_manufacturing_devices';
+      info.partTable = 'x_nuvo_eam_manufacturing_parts';
+      info.problemCauseTable = 'x_nuvo_eam_manufacturing_problem_cause';
+      info.resolutionCodeTable = 'x_nuvo_eam_manufacturing_resolution_code';
+    } else {
+      info.deviceTable = 'x_nuvo_eam_devices';
+      info.partTable = 'x_nuvo_eam_parts';
+      info.problemCauseTable = 'x_nuvo_eam_problem_cause';
+      info.resolutionCodeTable = 'x_nuvo_eam_resolution_code';
+    }
+
+    var workOrders;
+
+    if (workOrderIds) {
+      workOrders = getWorkOrdersByIds(workOrderTable, workOrderIds);
+    } else if (workOrderQuery) {
+      workOrders = getWorkOrdersByQuery(workOrderTable, workOrderQuery);
+    }
+
+    if (workOrders) {
+      if (workOrders.next()) {
+        var checklists = JSON.parse(workOrders.getValue('checklist_blueprint'));
+
+        for (var element in checklists) {
+          info.checklists.push(checklists[element].checklists.ruleDetails[0]);
+        }
+      }
+    }
+
+    return info;
+  }
+
+  function _isWarehouseEnabled() {
+    var binGr = new GlideRecord('x_nuvo_wm_bin');
+
+    if (binGr.isValid()) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function getWorkOrdersByIds(workOrderTable, workOrderIds) {
+    var workOrderGr = new GlideRecord(workOrderTable);
+
+    workOrderGr.addEncodedQuery('sys_idIN' + workOrderIds);
+    workOrderGr.query();
+
+    if (workOrderGr.hasNext()) {
+      return workOrderGr;
+    }
+  }
+
+  function getWorkOrdersByQuery(workOrderTable, workOrderQuery) {
+    var workOrderGr = new GlideRecord(workOrderTable);
+
+    workOrderGr.addEncodedQuery(workOrderQuery);
+    workOrderGr.query();
+
+    if (workOrderGr.hasNext()) {
+      return workOrderGr;
+    }
+  }
+
+  function updateWorkOrders(formData) {
+    formData = JSON.parse(formData);
+
+    var workOrders;
+
+    if (formData.workOrderIds) {
+      workOrders = getWorkOrdersByIds(
+        formData.workOrderTable,
+        formData.workOrderIds
+      );
+    } else if (formData.workOrderQuery) {
+      workOrders = getWorkOrdersByQuery(
+        formData.workOrderTable,
+        formData.workOrderQuery
+      );
+    }
+
+    if (workOrders) {
+      formData.labor.forEach(function (row) {
+        _createLaborItemizedCosts({
+          workOrderIds: row.workOrders.value.split(','),
+          hours: parseInt(row.hours.value),
+          minutes: parseInt(row.minutes.value),
+          startTime: row.startTime.value,
+        });
+      });
+
+      while (workOrders.next()) {
+        var workOrderId = workOrders.getUniqueValue();
+
+        var state = new x_nuvo_mobile.NuvoloProperties().getProperty(
+          'bulk_edit_end_state',
+          'Core EAM Config'
+        );
+
+        workOrders.setValue('state', state);
+        workOrders.setValue('problem_cause', formData.problemCause.value);
+        workOrders.setValue('resolution_code', formData.resolutionCode.value);
+        workOrders.setValue(
+          'resolution_detail',
+          formData.resolutionDetail.value
+        );
+        workOrders.update();
+
+        formData.inventoriedParts.forEach(function (row) {
+          _createInventoriedPartsItemizedCost({
+            workOrderId: workOrderId,
+            partId: row.part.value,
+            quantity: row.quantity.value,
+            locationTable: formData.partsLocationTable,
+            locationId: row.location.value,
+          });
+        }, this);
+
+        formData.nonInventoriedParts.forEach(function (row) {
+          _createNonInventoriedPartsItemizedCost({
+            workOrderId: workOrderId,
+            partDescription: row.partDescription.value,
+            pricePerUnit: row.pricePerUnit.value,
+            quantity: row.quantity.value,
+          });
+        }, this);
+
+        formData.tools.forEach(function (row) {
+          _createTool({
+            workOrderId: workOrderId,
+            name: row.tool.displayValue,
+            calibrationDate: row.calibrationDate.value,
+            modelNumber: row.modelNumber.value,
+            serialNumber: row.serialNumber.value,
+            manufacturer: row.manufacturer.value,
+          });
+        }, this);
+      }
+    }
+  }
+
+  function _createLaborItemizedCosts(labor) {
+    var hours = (labor.hours / labor.workOrderIds.length).toString();
+    var minutes = (labor.minutes / labor.workOrderIds.length).toString();
+
+    if (hours.length === 1) {
+      hours = '0' + hours;
+    }
+
+    if (minutes.length === 1) {
+      minutes = '0' + minutes;
+    }
+
+    var gdt = new GlideDateTime(labor.startTime);
+    var gt = new GlideTime();
+
+    gt.setValue(hours + ':' + minutes + ':00');
+    gdt.add(gt);
+
+    var endTime = gdt.getValue();
+
+    labor.workOrderIds.forEach(function (workOrderId) {
+      var itemizedCostGr = new GlideRecord(
+        'x_nuvo_eam_work_order_itemize_cost'
+      );
+
+      itemizedCostGr.initialize();
+      itemizedCostGr.setValue('work_order', workOrderId);
+      itemizedCostGr.setValue('type', _getCostTypeIdByName('Labor'));
+      itemizedCostGr.setValue('start_time', labor.startTime);
+      itemizedCostGr.setValue('end_time', endTime);
+      itemizedCostGr.setValue('work_duration', hours + ':' + minutes + ':00');
+      itemizedCostGr.insert();
+    });
+  }
+
+  function _createInventoriedPartsItemizedCost(part) {
+    var itemizedCostGr = new GlideRecord('x_nuvo_eam_work_order_itemize_cost');
+
+    itemizedCostGr.initialize();
+    itemizedCostGr.setValue('work_order', part.workOrderId);
+    itemizedCostGr.setValue('type', _getCostTypeIdByName('Parts'));
+    itemizedCostGr.setValue('inventoried_part', true);
+    itemizedCostGr.setValue('parts', part.partId);
+    itemizedCostGr.setValue('quantity', part.quantity);
+
+    if (part.locationTable == 'x_nuvo_wm_m2m_parts_bins') {
+      itemizedCostGr.setValue('x_nuvo_wm_bin_part', part.locationId);
+    } else {
+      itemizedCostGr.setValue('stockroom', part.locationId);
+    }
+
+    itemizedCostGr.insert();
+  }
+
+  function _createNonInventoriedPartsItemizedCost(part) {
+    var itemizedCostGr = new GlideRecord('x_nuvo_eam_work_order_itemize_cost');
+
+    itemizedCostGr.initialize();
+    itemizedCostGr.setValue('work_order', part.workOrderId);
+    itemizedCostGr.setValue('type', _getCostTypeIdByName('Parts'));
+    itemizedCostGr.setValue('inventoried_part', false);
+    itemizedCostGr.setValue('part_description', part.partDescription);
+    itemizedCostGr.setValue('price_per_unit', part.pricePerUnit);
+    itemizedCostGr.setValue('quantity', part.quantity);
+    itemizedCostGr.insert();
+  }
+
+  function _getCostTypeIdByName(costTypeName) {
+    var costTypeGr = new GlideRecord('x_nuvo_eam_cost_types');
+
+    costTypeGr.addQuery('name', costTypeName);
+    costTypeGr.query();
+
+    if (costTypeGr.next()) {
+      return costTypeGr.getUniqueValue();
+    }
+  }
+
+  function _createTool(tool) {
+    var toolGr = new GlideRecord('x_nuvo_eam_tools');
+
+    toolGr.initialize();
+    toolGr.setValue('name', tool.name);
+    toolGr.setValue('calibration_date', tool.calibrationDate);
+    toolGr.setValue('model_number', tool.modelNumber);
+    toolGr.setValue('serial_number', tool.serialNumber);
+    toolGr.setValue('work_order', tool.workOrderId);
+    toolGr.setValue('manufacturer', tool.manufacturer);
+    toolGr.insert();
+  }
+};
+]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>sean</sys_created_by>
+        <sys_created_on>2021-03-23 16:20:29</sys_created_on>
+        <sys_id>bbc0414e2fc36010f0e69bacf699b6d4</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>BulkUpdate</sys_name>
+        <sys_package display_value="Bulk Update" source="x_441625_bulk">0066748e2f836010f0e69bacf699b6e9</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Bulk Update">0066748e2f836010f0e69bacf699b6e9</sys_scope>
+        <sys_update_name>sys_script_include_bbc0414e2fc36010f0e69bacf699b6d4</sys_update_name>
+        <sys_updated_by>sean</sys_updated_by>
+        <sys_updated_on>2021-03-23 16:20:29</sys_updated_on>
+    </sys_script_include>
+</record_update>

@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_page">
+    <sys_ui_page action="INSERT_OR_UPDATE">
+        <category>general</category>
+        <client_script><![CDATA[function getErrorMessage(formData) {
+  var el = gel('messages');
+  var messages = JSON.parse(el.value);
+	
+  var formValidation = _validateFormData(formData, messages);
+  var invalidFields = [];
+
+  if (formValidation) {
+    if (formValidation.problemCauseMessage) {
+      invalidFields.push(formValidation.problemCauseMessage);
+    }
+
+    if (formValidation.resolutionCodeInvalidMessage) {
+      invalidFields.push(formValidation.resolutionCodeInvalidMessage);
+    }
+
+    if (formValidation.resolutionDetailInvalidMessage) {
+      invalidFields.push(formValidation.resolutionDetailInvalidMessage);
+    }
+
+    if (formValidation.laborInvalidMessage) {
+      invalidFields.push(formValidation.laborInvalidMessage);
+    }
+
+//    if (formValidation.partsInvalidMessage) {
+//      invalidFields.push(formValidation.partsInvalidMessage);
+//    }
+
+//    if (formValidation.inventoriedPartsInvalidMessage) {
+//      invalidFields.push(formValidation.inventoriedPartsInvalidMessage);
+//   }
+
+//    if (formValidation.nonInventoriedPartsInvalidMessage) {
+//      invalidFields.push(formValidation.nonInventoriedPartsInvalidMessage);
+//    }
+
+    if (formValidation.toolsInvalidMessage) {
+      invalidFields.push(formValidation.toolsInvalidMessage);
+    }
+
+    if (formValidation.checklistsInvalidMessage) {
+      invalidFields.push(formValidation.checklistsInvalidMessage);
+    }
+
+    if (invalidFields.length) {
+      return (
+		messages.mandatory_fields +
+        '\n' +
+        invalidFields.join('\n')
+      );
+    }
+
+    return '';
+  }
+}
+
+function _validateFormData(formData, messages) {
+  var formValidation = {};
+
+  formValidation.problemCauseMessage = _validateProblemCause(formData, messages);
+  formValidation.resolutionCodeInvalidMessage = _validateResolutionCode(
+    formData, messages
+  );
+  formValidation.resolutionDetailInvalidMessage = _validateResolutionDetail(
+    formData, messages
+  );
+  formValidation.laborInvalidMessage = _validateLabor(formData, messages);
+  formValidation.toolsInvalidMessage = _validateTools(formData, messages);
+  //formValidation.checklistsInvalidMessage = _validateChecklists(formData, messages);
+
+  var partsInvalidMessage = _validateParts(formData, messages);
+
+  formValidation.partsInvalidMessage = partsInvalidMessage;
+  formValidation.inventoriedPartsInvalidMessage = _validateInventoriedParts(
+    formData,
+    partsInvalidMessage,
+	messages
+  );
+  formValidation.nonInventoriedPartsInvalidMessage = _validateNonInventoriedParts(
+    formData,
+    partsInvalidMessage,
+	messages
+  );
+
+  return formValidation;
+}
+
+function _validateProblemCause(formData, messages) {
+  return formData.problemCause.value
+    ? ''
+    : messages.problem_cause;
+}
+
+function _validateResolutionCode(formData, messages) {
+  return formData.resolutionCode.value
+    ? ''
+    : messages.resolution_code;
+}
+
+function _validateResolutionDetail(formData, messages) {
+  return formData.resolutionDetail.value
+    ? ''
+    : messages.resolution_detail;
+}
+
+function _validateLabor(formData, messages) {
+  var isValid = true;
+
+  if (formData.labor.length === 1) {
+    var row = formData.labor[0];
+
+    isValid =
+      (row.hours.value || row.minutes.value) &&
+      row.startTime.value &&
+      row.workOrders.value
+        ? true
+        : false;
+  } else {
+    isValid = formData.labor.every(function (row) {
+      return (row.hours.value || row.minutes.value) &&
+        row.startTime.value &&
+        row.workOrders.value
+        ? true
+        : false;
+    });
+  }
+
+  return isValid ? '' : messages.incomplete_labor;
+}
+
+function _validateParts(formData, messages) {
+  var isInventoriedPartsPopulated = formData.inventoriedParts.some(function (
+    row
+  ) {
+    return row.part.value || row.location.value ? true : false;
+  });
+
+  var isNonInventoriedPartsPopulated = formData.nonInventoriedParts.some(
+    function (row) {
+      return row.partDescription.value ? true : false;
+    }
+  );
+
+  return isInventoriedPartsPopulated || isNonInventoriedPartsPopulated
+    ? ''
+    : messages.provide_one_part;
+}
+
+function _validateInventoriedParts(formData, partsInvalidMessage, messages) {
+  var isValid = true;
+
+  if (!partsInvalidMessage) {
+    if (formData.inventoriedParts.length === 1) {
+      var row = formData.inventoriedParts[0];
+
+      isValid =
+        row.part.value && !row.location.value
+          ? false
+          : !row.part.value && row.location.value
+          ? false
+          : true;
+    } else {
+      isValid = formData.inventoriedParts.every(function (row) {
+        return row.part.value && row.location.value ? true : false;
+      });
+    }
+  }
+
+  return isValid
+    ? ''
+    : messages.invalid_parts_selections;
+}
+
+function _validateNonInventoriedParts(formData, partsInvalidMessage, messages) {
+  var isValid = true;
+
+  if (!partsInvalidMessage) {
+    if (formData.nonInventoriedParts.length > 1) {
+      isValid = formData.nonInventoriedParts.every(function (row) {
+        return row.part_description.value ? true : false;
+      });
+    }
+  }
+
+  return isValid
+    ? ''
+    : messages.invalid_parts_selections;
+}
+
+function _validateChecklists(formData, messages) {
+  var isValid = true;
+
+  if (formData.checklists.length) {
+    isValid = formData.checklists.every(function (row) {
+      return row.questions.every(function (question) {
+        return question.value &&
+          (question.value == 'Yes' || question.value == 'Pass')
+          ? true
+          : false;
+      });
+    });
+  }
+
+  return isValid ? '' : messages.incomplete_checklist;
+}
+
+function _validateTools(formData, messages) {
+  var isValid = formData.tools.every(function (row) {
+    return row.tool.value ? true : false;
+  });
+
+  return isValid ? '' : messages.incomplete_tools;
+}
+
+function updateWorkOrders(formData, callback) {
+  var ga = new GlideAjax('BulkUpdateAjax');
+
+  ga.addParam('sysparm_name', 'updateWorkOrders');
+  ga.addParam('sysparm_form_data', JSON.stringify(formData));
+
+  ga.getXMLAnswer(function () {
+    callback();
+  });
+}
+]]></client_script>
+        <description/>
+        <direct>false</direct>
+        <endpoint>x_441625_bulk_bulk_update_work_orders.do</endpoint>
+        <html><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+	<g:evaluate var="jvar_messages" jelly="true">
+		var messages = {};
+		var messagesString = '';
+		messages.mandatory_fields = gs.getMessage('EAM_MM_WO_BULK_EDIT_MANDATORY_FIELDS');
+		messages.problem_cause = gs.getMessage('EAM_MM_WO_BULK_EDIT_PROBLEM_CAUSE');
+		messages.resolution_code = gs.getMessage('EAM_MM_WO_BULK_EDIT_RESOLUTION_CODE');
+		messages.resolution_detail = gs.getMessage('EAM_MM_WO_BULK_EDIT_RESOLUTION_DETAIL');
+		messages.incomplete_labor = gs.getMessage('EAM_MM_WO_BULK_EDIT_INCOMPLETE_LABOR');
+		messages.provide_one_part = gs.getMessage('EAM_MM_WO_BULK_EDIT_PROVIDE_ONE_PART');
+		messages.invalid_parts_selections = gs.getMessage('EAM_MM_WO_BULK_EDIT_INVALID_PARTS_SELECTIONS');
+		messages.incomplete_checklist = gs.getMessage('EAM_MM_WO_BULK_EDIT_INCOMPLETE_CHECKLIST');
+		messages.incomplete_tools = gs.getMessage('EAM_MM_WO_BULK_EDIT_INCOMPLETE_TOOLS');
+		messages.cancel = gs.getMessage('EAM_MM_WO_BULK_EDIT_CANCEL');
+		messages.update = gs.getMessage('EAM_MM_WO_BULK_EDIT_UPDATE');
+		messages.work_orders = gs.getMessage('EAM_MM_WO_BULK_EDIT_WORK_ORDERS');
+		messages.work_order = gs.getMessage('EAM_MM_WO_BULK_EDIT_WORK_ORDER');
+		messagesString = JSON.stringify(messages);
+		messagesString;
+	</g:evaluate>
+  <input id="frame_url" type="hidden" value="${sysparm_frame_url}" />
+  <input id="work_order_count" type="hidden" value="${sysparm_work_order_count}" />
+  <input id="messages" type="hidden" value="${jvar_messages}" />
+  <style>
+    .modal-dialog .modal-header {
+      padding: 15px 30px;
+    }
+
+    .modal-dialog .modal-header .btn-icon {
+      font-size: 16px;
+    }
+
+    .modal-dialog .modal-body {
+      padding: 0 15px 5px 15px;
+    }
+
+    .modal-dialog .modal-footer {
+      border-top: 1px solid #e5e5e5;
+      padding: 20px 30px;
+    }
+
+    .modal-dialog .modal-footer .error-message {
+      text-align: left;
+      white-space: pre-wrap;
+    }
+
+    .modal-dialog .modal-footer .btn {
+      padding: 6px 15px;
+    }
+
+    .modal-dialog .modal-footer .btn+.btn {
+      margin-left: 15px;
+    }
+  </style>
+  <script>
+    var glideModal = new GlideModal.get();
+
+    $j(document).ready(function () {
+	  var messages = JSON.parse($j(gel('messages')).val()); 
+      var frame = $j(gel('bulk_update_work_order_frame'));
+
+      frame.attr('src', $j(gel('frame_url')).val());
+
+      var modal = $j(gel('x_nuvo_eam_bulk_update_work_orders'));
+      var modalContent = modal.find('div.modal-content');
+      var modalFooter = $j('<div class="modal-footer"></div>');
+      var footerRow = $j('<div class="row"></div>');
+      var footerColumn = $j('<div class="col-xs-12"></div>');
+      var errorMessage = $j('<div class="alert alert-danger error-message"></div>');
+      var cancelButton = $j('<button class="btn btn-default">' + messages.cancel + '</button>');
+      var updateButton = $j('<button class="btn btn-primary">' + messages.update + '</button>');
+
+      modalContent.append(modalFooter.append(footerRow.append(footerColumn.append(errorMessage)))
+        .append(footerRow.append(footerColumn.append(cancelButton).append(updateButton))));
+
+      $j('div.error-message').html('').hide();
+
+      var workOrderCount = $j(gel('work_order_count')).val();
+
+      if (workOrderCount == 1) {
+        updateButton.text(messages.update + ' ' + workOrderCount + ' ' + messages.work_order);
+
+      } else if (workOrderCount > 1) {
+        updateButton.text(messages.update + ' ' + workOrderCount + ' ' + messages.work_orders);
+      }
+
+      cancelButton.on('click', function () {
+        glideModal.destroy();
+      });
+
+      updateButton.on('click', function () {
+        $j('div.error-message').html('').hide();
+        var formData = frame.contents().find('input.form-data').val();
+
+        if (formData) {
+          var errorMessage = getErrorMessage(JSON.parse(formData));
+	  
+          if (errorMessage) {
+            $j('div.error-message').html(errorMessage).show();
+
+          } else {
+            updateWorkOrders(formData, function () {
+              glideModal.getPreference('sysparm_callback').call();
+            });
+          }
+        }
+      });
+    });
+  </script>
+  <iframe id="bulk_update_work_order_frame" style="height: 800px; margin-bottom: -10px; width: 100%; border: none;"></iframe>
+</j:jelly>]]></html>
+        <name>bulk_update_work_orders</name>
+        <processing_script/>
+        <sys_class_name>sys_ui_page</sys_class_name>
+        <sys_created_by>sean</sys_created_by>
+        <sys_created_on>2021-03-23 16:26:48</sys_created_on>
+        <sys_id>c0328d8e2fc36010f0e69bacf699b689</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>bulk_update_work_orders</sys_name>
+        <sys_package display_value="Bulk Update" source="x_441625_bulk">0066748e2f836010f0e69bacf699b6e9</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Bulk Update">0066748e2f836010f0e69bacf699b6e9</sys_scope>
+        <sys_update_name>sys_ui_page_c0328d8e2fc36010f0e69bacf699b689</sys_update_name>
+        <sys_updated_by>sean</sys_updated_by>
+        <sys_updated_on>2021-03-23 16:26:48</sys_updated_on>
+    </sys_ui_page>
+</record_update>

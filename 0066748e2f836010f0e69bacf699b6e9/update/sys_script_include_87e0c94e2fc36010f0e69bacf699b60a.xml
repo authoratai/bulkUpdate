@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_441625_bulk.BulkUpdateAjax</api_name>
+        <caller_access/>
+        <client_callable>true</client_callable>
+        <description/>
+        <name>BulkUpdateAjax</name>
+        <script><![CDATA[var BulkUpdateAjax = Class.create();
+
+BulkUpdateAjax.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+  getWorkOrdersByQuery: function () {
+    var workOrderTable = this.getParameter('sysparm_work_order_table');
+    var workOrderQuery = this.getParameter('sysparm_work_order_query');
+
+    var workOrderGr = new BulkUpdate().getWorkOrdersByQuery(workOrderTable, workOrderQuery);
+    var workOrders = [];
+
+    if (workOrderGr) {
+      while (workOrderGr.next()) {
+        workOrders.push({
+          checksum: workOrderGr.getValue('checksum'),
+          sysId: workOrderGr.getUniqueValue()
+        });
+      }
+    }
+
+    return JSON.stringify(workOrders);
+  },
+
+  getWorkOrderIdsByQuery: function () {
+    var workOrderTable = this.getParameter('sysparm_work_order_table');
+    var workOrderQuery = this.getParameter('sysparm_work_order_query');
+
+    var workOrderGr = new BulkUpdate().getWorkOrdersByQuery(workOrderTable, workOrderQuery);
+    var workOrderIds = [];
+
+    if (workOrderGr) {
+      while (workOrderGr.next()) {
+        workOrderIds.push(workOrderGr.getUniqueValue());
+      }
+    }
+
+    return workOrderIds.join(',');
+  },
+
+  isWarehouseEnabled: function () {
+    return new BulkUpdate().isWarehouseEnabled();
+  },
+
+  updateWorkOrders: function () {
+    var formData = this.getParameter('sysparm_form_data');
+
+    return new BulkUpdate().updateWorkOrders(JSON.parse(formData));
+  },
+
+  type: 'BulkUpdateAjax'
+});]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>sean</sys_created_by>
+        <sys_created_on>2021-03-23 16:20:57</sys_created_on>
+        <sys_id>87e0c94e2fc36010f0e69bacf699b60a</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>BulkUpdateAjax</sys_name>
+        <sys_package display_value="Bulk Update" source="x_441625_bulk">0066748e2f836010f0e69bacf699b6e9</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Bulk Update">0066748e2f836010f0e69bacf699b6e9</sys_scope>
+        <sys_update_name>sys_script_include_87e0c94e2fc36010f0e69bacf699b60a</sys_update_name>
+        <sys_updated_by>sean</sys_updated_by>
+        <sys_updated_on>2021-03-23 16:20:57</sys_updated_on>
+    </sys_script_include>
+</record_update>

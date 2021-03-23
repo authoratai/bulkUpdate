@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_script">
+    <sys_ui_script action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <description/>
+        <global>false</global>
+        <name>x_441625_bulk.BulkUpdate</name>
+        <script><![CDATA[var BulkUpdate = (function () {
+	return {
+		getWorkOrderIdsByQuery: getWorkOrderIdsByQuery,
+		openBulkUpdateAllModal: openBulkUpdateAllModal,
+		updateWorkOrders: updateWorkOrders,
+		type: 'BulkUpdate',
+	};
+
+	function getWorkOrderIdsByQuery(workOrderTable, workOrderQuery, callback) {
+		var ga = new GlideAjax('BulkUpdateAjax');
+
+		ga.addParam('sysparm_name', 'getWorkOrderIdsByQuery');
+		ga.addParam('sysparm_work_order_table', workOrderTable);
+		ga.addParam('sysparm_work_order_query', workOrderQuery);
+
+		ga.getXMLAnswer(function (response) {
+			callback(response ? response.toString().split(',') : []);
+		});
+	}
+
+	function openBulkUpdateAllModal(workOrderTable, workOrderQuery, callback) {
+		getWorkOrderIdsByQuery(workOrderTable, workOrderQuery, function (response) {
+			var workOrderIds = response ? response.toString().split(',') : [];
+
+			_openBulkUpdateSelectedModal(workOrderTable, workOrderIds, callback);
+		});
+	}
+
+	function updateWorkOrders(workOrderTable, workOrderIds, callback) {
+		var workOrderQuery = 'sys_idIN' + workOrderIds + '^assigned_to=' +
+			g_user.userID + '^state!=3^state!=7^state!=130^state!=140';
+
+		_getWorkOrdersByQuery(workOrderTable, workOrderQuery, function (validWorkOrders) {
+			var validWorkOrderIds = validWorkOrders.map(function (workOrder) {
+				return workOrder.sysId;
+			}).join(',');
+
+			var checksums = validWorkOrders.reduce(function (acc, workOrder) {
+				if (acc.indexOf(workOrder.checksum) === -1) {
+					acc.push(workOrder.checksum);
+				}
+
+				return acc;
+			}, []);
+
+			if (checksums.length > 1) {
+				_openBulkUpdateConfirmationModal(workOrderTable, validWorkOrderIds, checksums,
+												 function (reducedWorkOrderIds) {
+					_openBulkUpdateSelectedModal(workOrderTable, reducedWorkOrderIds, callback);
+				});
+			} else {
+				_openBulkUpdateSelectedModal(workOrderTable, validWorkOrderIds, callback);
+			}
+		});
+	}
+
+	function _getWorkOrdersByQuery(workOrderTable, workOrderQuery, callback) {
+		var ga = new GlideAjax('BulkUpdateAjax');
+
+		ga.addParam('sysparm_name', 'getWorkOrdersByQuery');
+		ga.addParam('sysparm_work_order_table', workOrderTable);
+		ga.addParam('sysparm_work_order_query', workOrderQuery);
+
+		ga.getXMLAnswer(function (response) {
+			callback(response ? JSON.parse(response) : []);
+		});
+	}
+
+	function _openBulkUpdateConfirmationModal(workOrderTable, workOrderIds, checksums, callback) {
+		var workOrderQuery = 'sys_idIN' + workOrderIds;
+		var workOrderCount = workOrderIds.split(',').length;
+
+		var modal = new GlideModal('x_nuvo_eam_bulk_update_confirmation', false, 750);
+
+		var title = getMessage('EAM_MM_WO_BULK_EDIT_SELECT_WOS');
+
+		var frameUrl = '$sp.do?id=bulk_update_confirmation&work_order_table=' + workOrderTable +
+			'&work_order_ids=' + workOrderIds + '&work_order_query=' + encodeURIComponent(workOrderQuery) +
+			'&work_order_count=' + workOrderCount + '&work_order_checksums=' + checksums.join(',');
+
+		modal.setTitle(title);
+		modal.setBackdropStatic(true);
+		modal.setPreference('sysparm_frame_url', frameUrl);
+		modal.setPreference('sysparm_work_order_count', workOrderCount);
+		modal.setPreference('sysparm_work_order_table', workOrderTable);
+		modal.setPreference('sysparm_work_order_ids', workOrderIds);
+		modal.setPreference('sysparm_callback', callback);
+		modal.render();
+	}
+
+	function _openBulkUpdateSelectedModal(workOrderTable, workOrderIds, callback) {
+		var workOrderQuery = 'sys_idIN' + workOrderIds;
+		var workOrderCount = workOrderIds.split(',').length;
+
+		var modal = new GlideModal('x_nuvo_eam_bulk_update_work_orders', false, 750);
+
+		var title = getMessage('EAM_MM_WO_BULK_EDIT_UPDATE') + ' ' + workOrderCount + ' ' +
+			getMessage('EAM_MM_WO_BULK_EDIT_WORK_ORDERS');
+
+		if (workOrderCount === 1) {
+			title = title.slice(0, -1);
+		}
+
+		var frameUrl = '$sp.do?id=bulk_update_work_orders&work_order_table=' + workOrderTable +
+			'&work_order_ids=' + workOrderIds + '&work_order_query=' + encodeURIComponent(workOrderQuery) +
+			'&work_order_count=' + workOrderCount;
+
+		modal.setTitle(title);
+		modal.setBackdropStatic(true);
+		modal.setPreference('sysparm_frame_url', frameUrl);
+		modal.setPreference('sysparm_work_order_count', workOrderCount);
+		modal.setPreference('sysparm_callback', callback);
+		modal.render();
+	}
+})();]]></script>
+        <script_name>BulkUpdate</script_name>
+        <sys_class_name>sys_ui_script</sys_class_name>
+        <sys_created_by>sean</sys_created_by>
+        <sys_created_on>2021-03-23 16:18:57</sys_created_on>
+        <sys_id>ad40414e2fc36010f0e69bacf699b66b</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>x_441625_bulk.BulkUpdate</sys_name>
+        <sys_package display_value="Bulk Update" source="x_441625_bulk">0066748e2f836010f0e69bacf699b6e9</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Bulk Update">0066748e2f836010f0e69bacf699b6e9</sys_scope>
+        <sys_update_name>sys_ui_script_ad40414e2fc36010f0e69bacf699b66b</sys_update_name>
+        <sys_updated_by>sean</sys_updated_by>
+        <sys_updated_on>2021-03-23 16:18:57</sys_updated_on>
+        <ui_type>0</ui_type>
+        <use_scoped_format>false</use_scoped_format>
+    </sys_ui_script>
+</record_update>

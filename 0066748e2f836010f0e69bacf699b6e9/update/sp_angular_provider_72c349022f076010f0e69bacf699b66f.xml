@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_angular_provider">
+    <sp_angular_provider action="INSERT_OR_UPDATE">
+        <name>nuvoDynamicTable</name>
+        <script><![CDATA[function nuvoDynamicTable() {
+  return {
+    restrict: 'E',
+    replace: true,
+    scope: {
+      table: '='
+    },
+    templateUrl: 'nuvo-dynamic-table',
+    controller: function controller($scope) {
+      $scope.onFieldChange = function (rowIndex, fieldIndex) {
+        $scope.$emit('nuvo_dynamic_table.field_changed', {
+          name: $scope.table.name,
+          rows: $scope.table.rows,
+          field: {
+            index: fieldIndex,
+            tag: $scope.table.rows[rowIndex].fields[fieldIndex].tag,
+            type: $scope.table.rows[rowIndex].fields[fieldIndex].type
+          }
+        });
+      }
+    }
+  };
+}]]></script>
+        <sys_class_name>sp_angular_provider</sys_class_name>
+        <sys_created_by>sean</sys_created_by>
+        <sys_created_on>2021-03-23 16:33:37</sys_created_on>
+        <sys_id>72c349022f076010f0e69bacf699b66f</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>nuvoDynamicTable</sys_name>
+        <sys_package display_value="Bulk Update" source="x_441625_bulk">0066748e2f836010f0e69bacf699b6e9</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Bulk Update">0066748e2f836010f0e69bacf699b6e9</sys_scope>
+        <sys_update_name>sp_angular_provider_72c349022f076010f0e69bacf699b66f</sys_update_name>
+        <sys_updated_by>sean</sys_updated_by>
+        <sys_updated_on>2021-03-23 16:33:37</sys_updated_on>
+        <type>directive</type>
+    </sp_angular_provider>
+</record_update>

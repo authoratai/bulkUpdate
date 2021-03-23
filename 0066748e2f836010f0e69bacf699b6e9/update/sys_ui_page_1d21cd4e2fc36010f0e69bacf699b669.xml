@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_page">
+    <sys_ui_page action="INSERT_OR_UPDATE">
+        <category>general</category>
+        <client_script><![CDATA[function ok(checksum, callback) {
+	var workOrderTable = gel('work_order_table').value;
+	var workOrderIds = gel('work_order_ids').value;
+	var workOrderQuery = 'sys_idIN' + workOrderIds + '^checksum=' + checksum;
+
+	var ga = new GlideAjax('BulkUpdateAjax');
+
+	ga.addParam('sysparm_name', 'getWorkOrderIdsByQuery');
+	ga.addParam('sysparm_work_order_table', workOrderTable);
+	ga.addParam('sysparm_work_order_query', workOrderQuery);
+	ga.addParam('sysparm_checksum', checksum);
+
+	ga.getXMLAnswer(function (response) {
+		callback(response ? response.split(',') : []);
+	});
+}]]></client_script>
+        <description/>
+        <direct>false</direct>
+        <endpoint>x_441625_bulk_bulk_update_confirmation.do</endpoint>
+        <html><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+	<input id="frame_url" type="hidden" value="${sysparm_frame_url}" />
+	<input id="work_order_table" type="hidden" value="${sysparm_work_order_table}" />
+	<input id="work_order_ids" type="hidden" value="${sysparm_work_order_ids}" />
+	<style>
+		.modal-dialog .modal-header {
+		padding: 15px 30px;
+		}
+
+		.modal-dialog .modal-header .btn-icon {
+		font-size: 16px;
+		}
+
+		.modal-dialog .modal-body {
+		padding: 0 15px 5px 15px;
+		}
+
+		.modal-dialog .modal-footer {
+		border-top: 1px solid #e5e5e5;
+		padding: 20px 30px;
+		}
+
+		.modal-dialog .modal-footer .btn {
+		padding: 6px 15px;
+		}
+	</style>
+	<script>
+		var okLabel = getMessage('EAM_MM_WO_BULK_EDIT_OK');
+
+		var glideModal = new GlideModal.get();
+
+		$j(document).ready(function () {
+		var frame = $j(gel('bulk_update_confirmation_frame'));
+
+		frame.attr('src', $j(gel('frame_url')).val());
+
+		var modal = $j(gel('x_nuvo_eam_bulk_update_confirmation'));
+		var modalContent = modal.find('div.modal-content');
+		var modalFooter = $j('<div class="modal-footer"></div>');
+		var footerRow = $j('<div class="row"></div>');
+		var footerColumn = $j('<div class="col-xs-12"></div>');
+		var okButton = $j('<button class="btn btn-primary">' + okLabel + '</button>');
+
+		modalContent.append(modalFooter.append(footerRow.append(footerColumn))
+		.append(footerRow.append(footerColumn.append(okButton))));
+
+		okButton.on('click', function () {
+		var checksumValue = frame.contents().find('input.checksum-value').val();
+
+		if (checksumValue == 'cancel') {
+		glideModal.destroy();
+
+		} else {
+		ok(checksumValue, function (checksumWorkOrderIds) {
+		glideModal.getPreference('sysparm_callback').call(this, checksumWorkOrderIds.join(','));
+		glideModal.destroy();
+		});
+		}
+		});
+		});
+	</script>
+	<iframe id="bulk_update_confirmation_frame" style="height: 400px; margin-bottom: -10px; width: 100%; border: none;"></iframe>
+</j:jelly>]]></html>
+        <name>bulk_update_confirmation</name>
+        <processing_script/>
+        <sys_class_name>sys_ui_page</sys_class_name>
+        <sys_created_by>sean</sys_created_by>
+        <sys_created_on>2021-03-23 16:22:08</sys_created_on>
+        <sys_id>1d21cd4e2fc36010f0e69bacf699b669</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>bulk_update_confirmation</sys_name>
+        <sys_package display_value="Bulk Update" source="x_441625_bulk">0066748e2f836010f0e69bacf699b6e9</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Bulk Update">0066748e2f836010f0e69bacf699b6e9</sys_scope>
+        <sys_update_name>sys_ui_page_1d21cd4e2fc36010f0e69bacf699b669</sys_update_name>
+        <sys_updated_by>sean</sys_updated_by>
+        <sys_updated_on>2021-03-23 16:22:08</sys_updated_on>
+    </sys_ui_page>
+</record_update>

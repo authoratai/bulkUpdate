@@ -1,0 +1,764 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[function controller($scope, BulkUpdateService) {
+  var c = this;
+
+  c.data.formData = BulkUpdateService.buildFormData();
+  c.data.isUpdating = false;
+
+  c.$onInit = function () {
+    var index = 0;
+
+    c.data.generalPanel = BulkUpdateService.buildGeneralPanel(c.data);
+    c.data.laborPanel = BulkUpdateService.buildLaborPanel(c.data, index);
+    c.data.inventoriedPartsPanel = BulkUpdateService.buildInventoriedPartsPanel(c.data, index);
+    c.data.nonInventoriedPartsPanel = BulkUpdateService.buildNonInventoriedPartsPanel(c.data, index);
+    c.data.toolsPanel = BulkUpdateService.buildToolsPanel(c.data, index);
+
+    $scope.$watch('c.data.generalPanel.problemCause', function (problemCause) {
+      c.data.formData.problemCause = problemCause;
+    }, true);
+
+    $scope.$watch('c.data.generalPanel.resolutionCode', function (resolutionCode) {
+      c.data.formData.resolutionCode = resolutionCode;
+    }, true);
+
+    $scope.$watch('c.data.generalPanel.resolutionDetail', function (resolutionDetail) {
+      c.data.formData.resolutionDetail = resolutionDetail;
+    }, true);
+
+    $scope.$on('nuvo_dynamic_table.field_changed', function (event, table) {
+      if (table.name == 'labor') {
+        table.rows.map(function (row) {
+          var hours = parseInt(row.fields[0].value);
+          var minutes = parseInt(row.fields[1].value);
+
+          if (table.field.index === 0) {
+            if (!hours || hours < 1 || hours == -0) {
+              hours = 0;
+            }
+
+            row.fields[0].value = hours;
+
+          } else if (table.field.index === 1) {
+            if (!minutes || minutes < 1 || minutes == -0) {
+              minutes = 0;
+
+            } else if (minutes > 60) {
+              hours += parseInt(minutes / 60);
+              minutes = parseInt(minutes % 60);
+            }
+
+            row.fields[1].value = minutes;
+
+          } else if (table.field.index === 2) {
+            if (row.fields[2].isInvalid) {
+              row.fields[2].value = '';
+            }
+          }
+        });
+
+      } else if (table.name == 'inventoriedParts') {
+        table.rows.map(function (row) {
+          if (table.field.index == 0) {
+            row.fields[1].value = '';
+            row.fields[1].displayValue = '';
+
+            if (c.data.partLocationTable == 'x_nuvo_wm_m2m_parts_bins' && row.fields[0].value) {
+              row.fields[1].query = 'on_hand_quantity>0^parts=' + row.fields[0].value;
+            }
+          }
+        });
+
+      } else if (table.name == 'nonInventoriedParts') {
+        table.rows.map(function (row) {
+          if (table.field.index === 1) {
+            var pricePerUnit = row.fields[1].value.replace(new RegExp(g_user_grouping_separator, 'g'), '');
+
+            pricePerUnit = pricePerUnit ? parseFloat(pricePerUnit) : 0;
+
+            if (pricePerUnit > 0) {
+              row.fields[1].value = pricePerUnit.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,
+                g_user_grouping_separator);
+
+            } else {
+              row.fields[1].value = '0' + g_user_decimal_separator + '00';
+            }
+          }
+        });
+
+      } else if (table.name == 'tools') {
+        table.rows.map(function (row) {
+          if (table.field.index === 0) {
+            row.fields[2].value = '';
+            row.fields[3].value = '';
+            row.fields[4].value = '';
+
+            c.data.deviceId = row.fields[0].value;
+            c.data.device = null;
+            c.data.action = 'get_device';
+
+            c.server.update().then(function () {
+              if (c.data.device) {
+                row.fields[2].value = c.data.device.modelNumber;
+                row.fields[3].value = c.data.device.manufacturer;
+                row.fields[4].value = c.data.device.serialNumber;
+              }
+            });
+
+          } else if (table.field.index === 1) {
+            if (row.fields[1].isInvalid) {
+              row.fields[1].value = '';
+            }
+          }
+        });
+      }
+
+      c.data.formData[table.name] = table.rows;
+    });
+
+    $scope.$watch('c.data.checklists', function (checklists) {
+      c.data.formData.checklists = checklists;
+    }, true);
+
+    $scope.$watch('c.data.formData', function (formData) {
+      formData.workOrderTable = c.data.workOrderTable;
+      formData.workOrderQuery = c.data.workOrderQuery;
+      formData.workOrderIds = c.data.workOrderIds;
+      formData.workOrderCount = c.data.workOrderCount;
+      formData.partsLocationTable = c.data.partsLocationTable;
+
+      formData = JSON.stringify(BulkUpdateService.parseFormData(formData));
+
+      $(document.getElementById('bulk_update.form_data')).val(formData);
+    }, true);
+  };
+}
+]]></client_script>
+        <controller_as>c</controller_as>
+        <css>.bulk-update {
+  margin-bottom: 30px;
+
+  .collapsing {
+    transition-duration: 0.3s;
+    transition-timing-function: ease-in-out;
+  }
+
+  .body {
+    .btn {
+      &amp;:focus {
+        border-color: #3e95f4;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+        outline: none;
+      }
+
+      &amp;:focus:active {
+        box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.13);
+      }
+    }
+
+    .btn-default {
+      &amp;:focus {
+        background-color: #ffffff;
+      }
+
+      &amp;:hover:focus {
+        background-color: #e6e6e6;
+        border-color: #adadad;
+      }
+
+      &amp;:hover:active {
+        border-color: #adadad;
+      }
+    }
+
+    .btn-danger {
+      &amp;:focus {
+        background-color: #d9534f;
+      }
+
+      &amp;:hover:focus {
+        background-color: #c9302c;
+        border-color: #ac2925;
+      }
+
+      &amp;:hover:active {
+        border-color: #761c19;
+      }
+    }
+
+    .btn-link {
+      background-color: transparent;
+      border-color: transparent;
+      box-shadow: none;
+      padding: 5px 10px 5px 6px;
+
+      &amp;:focus {
+        background-color: transparent;
+        border-color: transparent;
+        box-shadow: none;
+        outline: none;
+        text-decoration: none;
+      }
+
+      &amp;:focus:hover {
+        background-color: transparent;
+        border-color: transparent;
+      }
+
+      &amp;:focus:active,
+      &amp;:focus:hover:active {
+        box-shadow: none;
+      }
+    }
+
+    .checklist-item {
+      display: flex;
+      flex-direction: row;
+      justify-items: center;
+      margin-bottom: 10px;
+      padding-left: 5px;
+
+      .item-question {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        justify-items: center;
+        min-width: 100%;
+
+        .input-item {
+          max-width: 90px;
+          min-width: 90px;
+        }
+
+        .on-off-toggle {
+          position: relative;
+          margin-left: 30px;
+          max-width: 75px;
+          min-width: 75px;
+
+          .on-off-toggle-checkbox {
+            display: none;
+          }
+
+          .on-off-toggle-checkbox:checked + .on-off-toggle-label {
+            .on-off-toggle-inner {
+              margin-left: 0;
+            }
+
+            .on-off-toggle-switch {
+              right: 0;
+            }
+          }
+
+          .on-off-toggle-label {
+            border: 1px solid #808080;
+            border-radius: 3px;
+            cursor: pointer;
+            display: block;
+            height: 30px;
+            margin-bottom: 0;
+            max-width: 75px;
+            min-width: 75px;
+            overflow: hidden;
+
+            .on-off-toggle-inner {
+              display: block;
+              margin-left: -100%;
+              transition: margin 0.2s cubic-bezier(0.37, 0, 0.63, 1);
+              width: 200%;
+
+              &amp;:before {
+                background-color: #51b8aa;
+                color: #ffffff;
+                content: attr(data-content);
+                padding-left: 10px;
+                text-align: left;
+              }
+
+              &amp;:after {
+                background-color: $btn-danger-bg;
+                color: #ffffff;
+                content: attr(data-content);
+                padding-right: 10px;
+                text-align: right;
+              }
+
+              &amp;:before,
+              &amp;:after {
+                color: white;
+                display: block;
+                float: left;
+                font-size: 12px;
+                font-weight: bold;
+                height: 28px;
+                line-height: 28px;
+                padding: 0 12px;
+                width: 50%;
+              }
+            }
+
+            .on-off-toggle-switch {
+              background-color: #ffffff;
+              border: 1px solid #808080;
+              border-radius: 3px;
+              bottom: 0;
+              display: block;
+              height: 18px;
+              margin: 6px;
+              max-width: 15px;
+              min-width: 15px;
+              position: absolute;
+              right: 48px;
+              top: 0;
+              transition: all 0.2s cubic-bezier(0.37, 0, 0.63, 1);
+            }
+          }
+        }
+
+        .range-item {
+          max-width: 90px;
+          min-width: 90px;
+        }
+      }
+
+      .item-question-with-label {
+        min-width: 75%;
+      }
+
+      .item-label {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+        justify-items: end;
+        min-width: 25%;
+      }
+    }
+
+    .form-control {
+      &amp;:focus {
+        background-color: #ffffff;
+        border-color: #3e95f4;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+        outline: none;
+      }
+    }
+
+    .form-group {
+      margin: 0 0 15px 0;
+
+      textarea {
+        height: 64px;
+        overflow: hidden;
+        overflow-wrap: break-word;
+        resize: vertical;
+        width: 100%;
+      }
+
+      .sp-date-format-info {
+        display: none;
+      }
+
+      .table-responsive {
+        .btn {
+          &amp;.btn-icon {
+            font-size: 14px;
+            height: 34px;
+            margin: 0;
+            width: 34px;
+
+            &amp;:active {
+              outline: none;
+            }
+
+            span {
+              vertical-align: middle;
+
+              &amp;.fa-plus {
+                margin-left: -1px;
+                margin-top: -3px;
+              }
+
+              &amp;.fa-times {
+                margin-left: -1px;
+                margin-top: -4px;
+              }
+            }
+          }
+        }
+
+        .table {
+          background-color: transparent;
+          margin-bottom: 0;
+
+          thead {
+            tr {
+              th {
+                border: none;
+                padding: 5px 5px 0 5px;
+              }
+            }
+          }
+
+          tbody {
+            tr {
+              td {
+                border: none;
+                padding: 10px 5px 0 5px;
+
+                &amp;:first-child {
+                  padding: 10px 5px 0 0;
+                }
+
+                &amp;:last-child {
+                  padding: 10px 0 0 5px;
+                }
+              }
+
+              &amp;:first-child {
+                td {
+                  padding-top: 5px;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      @media screen and (max-width: 767px) {
+        .table-responsive {
+          border: none;
+          margin-bottom: 0;
+        }
+      }
+
+      .control-label {
+        margin-left: 3px;
+      }
+    }
+
+    .has-error {
+      .form-control {
+        border-color: #cccccc;
+
+        &amp;:focus {
+          border-color: #3e95f4;
+        }
+      }
+    }
+
+    .input-group {
+      .input-group-addon {
+        select.form-control {
+          border-right: 1px solid #cccccc;
+          cursor: pointer;
+          margin-right: -1px;
+          z-index: 3;
+
+          &amp;:hover {
+            background-color: #e6e6e6;
+          }
+
+          &amp;:focus {
+            background-color: #ffffff;
+            border-color: #3e95f4;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            outline: none;
+          }
+
+          &amp;:hover:focus {
+            background-color: #e6e6e6;
+            border-color: #adadad;
+          }
+
+          &amp;:hover:active {
+            border-color: #adadad;
+          }
+
+          &amp;:focus:active {
+            box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.13);
+          }
+        }
+
+        &amp;:after {
+          content: "\25bc";
+          font-size: 8px;
+          position: absolute;
+          left: 43px;
+          pointer-events: none;
+          top: 13px;
+          z-index: 3;
+        }
+      }
+
+      .input-group-btn {
+        button {
+          border-bottom-left-radius: 0;
+          border-top-left-radius: 0;
+          margin-left: -1px;
+
+          &amp;:focus {
+            outline: none;
+          }
+        }
+      }
+    }
+
+    .radio label {
+      cursor: pointer;
+      font-weight: normal;
+      margin-bottom: 0;
+      padding-left: 18px;
+      padding-right: 2px;
+    }
+
+    .radio input[type="radio"],
+    .radio-inline input[type="radio"] {
+      margin-left: 0;
+      position: absolute;
+    }
+
+    .row {
+      &amp;:last-child {
+        .form-group {
+          margin-bottom: 0;
+        }
+      }
+    }
+
+    .select2-container-multi {
+      &amp;.select2-container-active {
+        .select2-choices {
+          border-color: #3e95f4;
+          box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+          outline: none;
+        }
+      }
+
+      .select2-choices {
+        border-color: #cccccc;
+
+        .select2-search-field {
+          height: 32px;
+        }
+
+        .select2-search-choice {
+          height: 26px;
+          padding: 5px 10px 5px 20px;
+        }
+      }
+
+      .select2-search-choice-close {
+        left: 6px;
+        top: 6px;
+      }
+    }
+
+    .panel {
+      border: none;
+      box-shadow: none;
+      margin-bottom: 30px;
+
+      &amp;.checklist {
+        margin-bottom: 20px;
+      }
+
+      .panel-body {
+        padding: 10px 0 0 0;
+      }
+
+      .panel-heading {
+        background-color: transparent;
+        border-bottom-width: 1px;
+        border-left-width: 0;
+        border-right-width: 0;
+        border-top-width: 0;
+        padding: 0 5px 10px 5px;
+
+        a {
+          font-size: 14px;
+          margin: -5px;
+          padding: 5px;
+        }
+
+        .fa {
+          transition: 0.2s transform cubic-bezier(0.37, 0, 0.63, 1);
+        }
+
+        .panel-collapsed.fa {
+          transform: rotate(-90deg);
+        }
+
+        .panel-title {
+          font-size: 16px;
+        }
+      }
+    }
+  }
+}
+</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>false</has_preview>
+        <id>bulk_update</id>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {  }]]></link>
+        <name>Bulk Update</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function () {
+	data.general_label = gs.getMessage('General');
+	data.inventorized_parts_label = gs.getMessage('EAM_MM_WO_BULK_EDIT_INVENTORIZED_PARTS');
+	data.quantity_label = gs.getMessage('Quantity');
+	data.labor_label = gs.getMessage('EAM_MM_WO_BULK_EDIT_LABOR');
+	data.non_inventorized_parts_label = gs.getMessage('EAM_MM_WO_BULK_EDIT_NON_INVENTORIZED_PARTS');
+	data.part_description_label = gs.getMessage('EAM_MM_WO_BULK_EDIT_PART_DESCRIPTION');
+	data.price_per_unit_label = gs.getMessage('EAM_MM_WO_BULK_EDIT_PRICE_PER_UNIT');
+	data.tool_label = gs.getMessage('EAM_MM_WO_BULK_EDIT_TOOL');
+	data.tools_label = gs.getMessage('EAM_MM_WO_BULK_EDIT_TOOLS');
+	data.part_label = gs.getMessage('EAM_MM_WO_BULK_EDIT_PART');
+	data.work_order_label = gs.getMessage('EAM_MM_WO_BULK_EDIT_WORK_ORDERS');
+	data.hours_label = gs.getMessage('Hours');
+	data.minutes_label = gs.getMessage('Minutes');
+	data.start_time_label = gs.getMessage('Start time');
+	data.calibration_date_label = gs.getMessage('EAM_MM_WO_BULK_EDIT_CALIBRATION_DATE');
+	data.model_number_label = gs.getMessage('EAM_MM_WO_BULK_EDIT_MODEL_NUMBER');
+	data.manufacturer_label = gs.getMessage('EAM_MM_WO_BULK_EDIT_MANUFACTURER');
+	data.serial_number_label = gs.getMessage('EAM_MM_WO_BULK_EDIT_SERIAL_NUMBER');
+
+	var bulkUpdate = new BulkUpdate();
+
+	if (!input) {
+		data.workOrderTable = $sp.getParameter('work_order_table');
+		data.workOrderIds = $sp.getParameter('work_order_ids');
+		data.workOrderQuery = $sp.getParameter('work_order_query');
+		data.workOrderCount = $sp.getParameter('work_order_count');
+
+		var info = bulkUpdate.getWorkOrderInfo(data.workOrderTable, data.workOrderIds, data.workOrderQuery);
+
+		data.deviceTable = info.deviceTable;
+		data.problemCauseTable = info.problemCauseTable;
+		data.resolutionCodeTable = info.resolutionCodeTable;
+		data.partTable = info.partTable;
+		data.partLocationTable = info.partLocationTable;
+		data.partLocationLabel = info.partLocationLabel;
+		data.checklists = info.checklists;
+
+	} else {
+		if (input.action == 'get_device') {
+			data.device = bulkUpdate.getDeviceById(input.deviceTable, input.deviceId);
+		}
+	}
+})();
+]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>sean</sys_created_by>
+        <sys_created_on>2021-03-23 16:30:15</sys_created_on>
+        <sys_id>f31301ce2fc36010f0e69bacf699b6d5</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_name>Bulk Update</sys_name>
+        <sys_package display_value="Bulk Update" source="x_441625_bulk">0066748e2f836010f0e69bacf699b6e9</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Bulk Update">0066748e2f836010f0e69bacf699b6e9</sys_scope>
+        <sys_update_name>sp_widget_f31301ce2fc36010f0e69bacf699b6d5</sys_update_name>
+        <sys_updated_by>sean</sys_updated_by>
+        <sys_updated_on>2021-03-23 16:30:47</sys_updated_on>
+        <template><![CDATA[<div class="bulk-update">
+  <input id="bulk_update.form_data" class="form-data" type="hidden" value="" />
+  <div class="body">
+    <nuvo-collapsible-panel panel="c.data.generalPanel">
+      <div class="row">
+        <div class="col-xs-6">
+          <div class="form-group">
+            <div class="control-label">
+              <label for="{{c.data.generalPanel.problemCause.id}}">
+                <span mandatory="c.data.generalPanel.problemCause.mandatory"></span>
+                <span>${EAM_MM_WO_BULK_EDIT_PROBLEM_CAUSE}</span>
+              </label>
+            </div>
+            <sn-record-picker id="{{c.data.generalPanel.problemCause.id}}" field="c.data.generalPanel.problemCause" table="c.data.generalPanel.problemCause.table" default-query="c.data.generalPanel.problemCause.query" display-field="c.data.generalPanel.problemCause.displayField" value-field="c.data.generalPanel.problemCause.valueField" search-fields="c.data.generalPanel.problemCause.searchFields"></sn-record-picker>
+          </div>
+        </div>
+        <div class="col-xs-6">
+          <div class="form-group">
+            <div class="control-label">
+              <label for="{{c.data.generalPanel.resolutionCode.id}}">
+                <span mandatory="c.data.generalPanel.resolutionCode.mandatory"></span>
+                <span>${EAM_MM_WO_BULK_EDIT_RESOLUTION_CODE}</span>
+              </label>
+            </div>
+            <sn-record-picker id="{{c.data.generalPanel.resolutionCode.id}}" field="c.data.generalPanel.resolutionCode" table="c.data.generalPanel.resolutionCode.table" default-query="c.data.generalPanel.resolutionCode.query" display-field="c.data.generalPanel.resolutionCode.displayField" value-field="c.data.generalPanel.resolutionCode.valueField" search-fields="c.data.generalPanel.resolutionCode.searchFields"></sn-record-picker>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="form-group">
+            <div class="control-label">
+              <label for="{{c.data.generalPanel.resolutionDetail.id}}">
+                <span mandatory="c.data.generalPanel.resolutionDetail.mandatory"></span>
+                <span>${EAM_MM_WO_BULK_EDIT_RESOLUTION_DETAIL}</span>
+              </label>
+            </div>
+            <textarea id="{{c.data.generalPanel.resolutionDetail.id}}" class="form-control" ng-model="c.data.generalPanel.resolutionDetail.value" ng-model-options="{ updateOn: 'blur' }"></textarea>
+          </div>
+        </div>
+      </div>
+    </nuvo-collapsible-panel>
+    <nuvo-collapsible-panel panel="c.data.laborPanel">
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="form-group">
+            <nuvo-dynamic-table table="c.data.laborPanel.laborTable"></nuvo-dynamic-table>
+          </div>
+        </div>
+      </div>
+    </nuvo-collapsible-panel>
+    <nuvo-collapsible-panel panel="c.data.inventoriedPartsPanel">
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="form-group">
+            <nuvo-dynamic-table table="c.data.inventoriedPartsPanel.inventoriedPartsTable"></nuvo-dynamic-table>
+          </div>
+        </div>
+      </div>
+    </nuvo-collapsible-panel>
+    <nuvo-collapsible-panel panel="c.data.nonInventoriedPartsPanel">
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="form-group">
+            <nuvo-dynamic-table table="c.data.nonInventoriedPartsPanel.nonInventoriedPartsTable"></nuvo-dynamic-table>
+          </div>
+        </div>
+      </div>
+    </nuvo-collapsible-panel>
+    <nuvo-collapsible-panel panel="c.data.toolsPanel">
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="form-group">
+            <nuvo-dynamic-table table="c.data.toolsPanel.toolsTable"></nuvo-dynamic-table>
+          </div>
+        </div>
+      </div>
+    </nuvo-collapsible-panel>
+    <div ng-repeat="checklist in c.data.checklists track by $index">
+      <nuvo-collapsible-panel panel="checklist" ng-if="checklist.questions.length">
+        <div class="row">
+          <div class="col-xs-12">
+            <div ng-repeat="question in checklist.questions track by $index">
+              <nuvo-checklist-item question="question"></nuvo-checklist-item>
+            </div>
+          </div>
+        </div>
+      </nuvo-collapsible-panel>
+    </div>
+  </div>
+</div>]]></template>
+    </sp_widget>
+</record_update>

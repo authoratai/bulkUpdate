@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_angular_provider">
+    <sp_angular_provider action="INSERT_OR_UPDATE">
+        <name>nuvoChecklistItem</name>
+        <script><![CDATA[function nuvoChecklistItem() {
+  return {
+    restrict: 'E',
+    replace: true,
+    scope: {
+      question: '='
+    },
+    templateUrl: 'nuvo-checklist-item',
+    controller: function controller($scope) {
+      if ($scope.question.type == 1) {
+        if (!$scope.question.value || $scope.question.value == 'fail') {
+          $scope.question.value = 'Fail';
+
+        } else {
+          $scope.question.value = 'Pass';
+        }
+
+      } else if ($scope.question.type == 3) {
+        if (!$scope.question.value || $scope.question.value == 'no') {
+          $scope.question.value = 'No';
+
+        } else {
+          $scope.question.value = 'Yes';
+        }
+
+      } else if ($scope.question.type == 6) {
+        if (!$scope.question.value || $scope.question.value == 'n/a') {
+          $scope.question.value = 'N/A';
+
+        } else if ($scope.question.value == 'no') {
+          $scope.question.value = 'No';
+
+        } else {
+          $scope.question.value = 'Yes';
+        }
+
+      } else if ($scope.question.type == 7) {
+        if (!$scope.question.value || $scope.question.value == 'n/a') {
+          $scope.question.value = 'N/A';
+
+        } else if ($scope.question.value == 'fail') {
+          $scope.question.value = 'Fail';
+
+        } else {
+          $scope.question.value = 'Pass';
+        }
+      }
+    }
+  };
+}]]></script>
+        <sys_class_name>sp_angular_provider</sys_class_name>
+        <sys_created_by>sean</sys_created_by>
+        <sys_created_on>2021-03-23 16:34:27</sys_created_on>
+        <sys_id>8504c1022f076010f0e69bacf699b682</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>nuvoChecklistItem</sys_name>
+        <sys_package display_value="Bulk Update" source="x_441625_bulk">0066748e2f836010f0e69bacf699b6e9</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Bulk Update">0066748e2f836010f0e69bacf699b6e9</sys_scope>
+        <sys_update_name>sp_angular_provider_8504c1022f076010f0e69bacf699b682</sys_update_name>
+        <sys_updated_by>sean</sys_updated_by>
+        <sys_updated_on>2021-03-23 16:34:27</sys_updated_on>
+        <type>directive</type>
+    </sp_angular_provider>
+</record_update>

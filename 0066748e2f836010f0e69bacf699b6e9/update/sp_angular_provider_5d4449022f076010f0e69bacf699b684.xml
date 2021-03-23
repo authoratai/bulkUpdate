@@ -1,0 +1,534 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_angular_provider">
+    <sp_angular_provider action="INSERT_OR_UPDATE">
+        <name>BulkUpdateService</name>
+        <script><![CDATA[function BulkUpdateService() {
+  function buildFormData() {
+    return {
+      problemCause: {},
+      resolutionCode: {},
+      resolutionDetail: {},
+      labor: [],
+      inventoriedParts: [],
+      nonInventoriedParts: [],
+      tools: [],
+      checklists: []
+    };
+  }
+
+  function buildGeneralPanel(data) {
+    return {
+      id: 'bulk_update.general_panel',
+      title: data.general_label,
+      isCollapsed: false,
+      problemCause: {
+        id: 'bulk_update.problem_cause',
+        tag: 'reference',
+        table: data.problemCauseTable,
+        query: '',
+        displayField: 'name',
+        valueField: 'sys_id',
+        searchFields: 'name',
+        multiple: false,
+        dynamic: false,
+        mandatory: true,
+        value: '',
+        displayValue: ''
+      },
+      resolutionCode: {
+        id: 'bulk_update.resolution_code',
+        tag: 'reference',
+        table: data.resolutionCodeTable,
+        query: '',
+        displayField: 'eam_res_name',
+        valueField: 'sys_id',
+        searchFields: 'eam_res_name',
+        multiple: false,
+        dynamic: false,
+        mandatory: true,
+        value: '',
+        displayValue: ''
+      },
+      resolutionDetail: {
+        id: 'bulk_update.resolution_detail',
+        tag: 'input',
+        type: 'textarea',
+        mandatory: true,
+        value: ''
+      }
+    };
+  }
+
+  function buildInventoriedPartsPanel(data, index) {
+    return {
+      id: 'bulk_update.inventoried_parts_panel',
+      title: data.inventorized_parts_label,
+      isCollapsed: false,
+      inventoriedPartsTable: {
+        id: 'bulk_update.inventoried_parts_table',
+        name: 'inventoriedParts',
+        headers: [
+          data.part_label, data.partLocationLabel, data.quantity_label, ''
+        ],
+        rows: [
+          _buildInventoriedPartsTableRow(data, index)
+        ],
+        addRow: function (table) {
+          table.rows.push(_buildInventoriedPartsTableRow(data, table.rows.length));
+        },
+        removeRow: function (table, rowId) {
+          var rowIndex = table.rows.map(function (row) {
+            return row.id;
+          }).indexOf(rowId);
+
+          table.rows.splice(rowIndex, 1);
+        }
+      }
+    };
+  }
+
+  function _buildInventoriedPartsTableRow(data, index) {
+    return {
+      id: 'bulk_update.inventoried_parts_table.row_' + index,
+      fields: [{
+        id: 'part',
+        tag: 'reference',
+        table: data.partTable,
+        query: '',
+        displayField: 'name',
+        displayFields: '',
+        valueField: 'sys_id',
+        searchFields: 'name',
+        multiple: false,
+        dynamic: false,
+        mandatory: false,
+        value: '',
+        displayValue: '',
+        style: {
+          minWidth: '350px',
+          maxWidth: '350px'
+        }
+      }, {
+        id: 'location',
+        tag: 'reference',
+        table: data.partLocationTable,
+        query: '',
+        displayField: 'name',
+        displayFields: '',
+        valueField: 'sys_id',
+        searchFields: 'name',
+        multiple: false,
+        dynamic: false,
+        mandatory: false,
+        value: '',
+        displayValue: '',
+        style: {
+          minWidth: '300px',
+          maxWidth: '300px'
+        }
+      }, {
+        id: 'quantity',
+        tag: 'input',
+        type: 'number',
+        min: 1,
+        max: null,
+        mandatory: false,
+        value: 1,
+        style: {
+          width: '99%'
+        }
+      }, {
+        id: 'actions',
+        tag: 'actions',
+        style: {
+          width: '1%'
+        }
+      }]
+    };
+  }
+
+  function buildLaborPanel(data, index) {
+    return {
+      id: 'bulk_update.labor_panel',
+      title: data.labor_label,
+      isCollapsed: false,
+      laborTable: {
+        id: 'bulk_update.labor_table',
+        name: 'labor',
+        headers: [
+          data.hours_label, data.minutes_label, data.start_time_label, data.work_order_label, ''
+        ],
+        rows: [
+          _buildLaborTableRow(data, index)
+        ],
+        addRow: function (table) {
+          table.rows.push(_buildLaborTableRow(data, table.rows.length));
+        },
+        removeRow: function (table, rowId) {
+          var index = table.rows.map(function (row) {
+            return row.id;
+          }).indexOf(rowId);
+
+          table.rows.splice(index, 1);
+        }
+      }
+    };
+  }
+
+  function _buildLaborTableRow(data, index) {
+    return {
+      id: 'bulk_update.labor_table.row_' + index,
+      fields: [{
+        id: 'hours',
+        tag: 'input',
+        type: 'number',
+        min: 0,
+        max: null,
+        mandatory: true,
+        value: 0,
+        style: {
+          minWidth: '100px',
+          maxWidth: '100px'
+        }
+      }, {
+        id: 'minutes',
+        tag: 'input',
+        type: 'number',
+        min: 0,
+        max: null,
+        mandatory: true,
+        value: 0,
+        style: {
+          minWidth: '100px',
+          maxWidth: '100px'
+        }
+      }, {
+        id: 'start_time',
+        tag: 'input',
+        type: 'datetime',
+        mandatory: true,
+        value: '',
+        style: {
+          minWidth: '200px',
+          maxWidth: '200px'
+        }
+      }, {
+        id: 'work_orders',
+        tag: 'reference',
+        table: data.workOrderTable,
+        query: data.workOrderQuery,
+        displayField: 'number',
+        displayFields: 'asset',
+        valueField: 'sys_id',
+        searchFields: 'number,asset',
+        multiple: true,
+        dynamic: false,
+        mandatory: true,
+        value: '',
+        displayValue: '',
+        style: {
+          width: '99%'
+        }
+      }, {
+        id: 'actions',
+        tag: 'actions',
+        style: {
+          width: '1%'
+        }
+      }]
+    };
+  }
+
+  function buildNonInventoriedPartsPanel(data, index) {
+    return {
+      id: 'bulk_update.non_inventoried_parts_panel',
+      title: data.non_inventorized_parts_label,
+      isCollapsed: false,
+      nonInventoriedPartsTable: {
+        id: 'bulk_update.non_inventoried_parts_table',
+        name: 'nonInventoriedParts',
+        headers: [
+          data.part_description_label, data.price_per_unit_label, data.quantity_label, ''
+        ],
+        rows: [
+          _buildNonInventoriedPartsTableRow(index)
+        ],
+        addRow: function (table) {
+          table.rows.push(_buildNonInventoriedPartsTableRow(table.rows.length));
+        },
+        removeRow: function (table, rowId) {
+          var index = table.rows.map(function (row) {
+            return row.id;
+          }).indexOf(rowId);
+
+          table.rows.splice(index, 1);
+        }
+      }
+    };
+  }
+
+  function _buildNonInventoriedPartsTableRow(index) {
+    return {
+      id: 'bulk_update.non_inventoried_parts_table.row_' + index,
+      fields: [{
+        id: 'part_description',
+        tag: 'input',
+        type: 'text',
+        mandatory: false,
+        value: '',
+        style: {
+          width: '99%'
+        }
+      }, {
+        id: 'price_per_unit',
+        tag: 'input',
+        type: 'currency',
+        mandatory: false,
+        value: '0.00',
+        style: {
+          minWidth: '200px',
+          maxWidth: '200px'
+        }
+      }, {
+        id: 'quantity',
+        tag: 'input',
+        type: 'number',
+        min: 1,
+        max: null,
+        mandatory: false,
+        value: 1,
+        style: {
+          minWidth: '100px',
+          maxWidth: '100px'
+        }
+      }, {
+        id: 'actions',
+        tag: 'actions',
+        style: {
+          width: '1%'
+        }
+      }]
+    };
+  }
+
+  function buildToolsPanel(data, index) {
+    return {
+      id: 'bulk_update.tools_panel',
+      title: data.tools_label,
+      isCollapsed: false,
+      toolsTable: {
+        id: 'bulk_update.tools_table',
+        name: 'tools',
+        headers: [
+          data.tool_label, data.calibration_date_label, data.model_number_label,
+          data.manufacturer_label, data.serial_number_label
+        ],
+        rows: [
+          _buildToolsTableRow(data, index)
+        ],
+        addRow: function (table) {
+          table.rows.push(_buildToolsTableRow(data, table.rows.length));
+        },
+        removeRow: function (table, rowId) {
+          var index = table.rows.map(function (row) {
+            return row.id;
+          }).indexOf(rowId);
+
+          table.rows.splice(index, 1);
+        }
+      }
+    };
+  }
+
+  function _buildToolsTableRow(data, index) {
+    return {
+      id: 'bulk_update.tools_table.row_' + index,
+      fields: [{
+        id: 'tool',
+        tag: 'reference',
+        table: data.deviceTable,
+        query: 'install_status=1',
+        displayField: 'name',
+        displayFields: 'model_name',
+        valueField: 'sys_id',
+        searchFields: 'name,model_name',
+        multiple: false,
+        dynamic: true,
+        editMode: false,
+        mandatory: true,
+        value: '',
+        displayValue: '',
+        style: {
+          minWidth: '220px',
+          maxWidth: '220px'
+        }
+      }, {
+        id: 'calibration_date',
+        tag: 'input',
+        type: 'date',
+        mandatory: true,
+        value: '',
+        style: {
+          minWidth: '160px',
+          maxWidth: '160px'
+        }
+      }, {
+        id: 'model_number',
+        tag: 'input',
+        type: 'text',
+        mandatory: true,
+        value: '',
+        style: {
+          width: '33%'
+        }
+      }, {
+        id: 'manufacturer',
+        tag: 'input',
+        type: 'text',
+        mandatory: true,
+        value: '',
+        style: {
+          width: '33%'
+        }
+      }, {
+        id: 'serial_number',
+        tag: 'input',
+        type: 'text',
+        mandatory: true,
+        value: '',
+        style: {
+          width: '33%'
+        }
+      }, {
+        id: 'actions',
+        tag: 'actions',
+        style: {
+          width: '1%'
+        }
+      }]
+    };
+  }
+
+  function parseFormData(formData) {
+    return {
+      workOrderTable: formData.workOrderTable,
+      workOrderQuery: formData.workOrderQuery,
+      workOrderIds: formData.workOrderIds,
+      workOrderCount: formData.workOrderCount,
+      partsLocationTable: formData.partsLocationTable,
+      problemCause: {
+        value: formData.problemCause.value,
+        displayValue: formData.problemCause.displayValue
+      },
+      resolutionCode: {
+        value: formData.resolutionCode.value,
+        displayValue: formData.resolutionCode.displayValue
+      },
+      resolutionDetail: {
+        value: formData.resolutionDetail.value
+      },
+      labor: formData.labor.map(function (row) {
+        return {
+          hours: {
+            value: row.fields[0].value
+          },
+          minutes: {
+            value: row.fields[1].value
+          },
+          startTime: {
+            value: row.fields[2].value
+          },
+          workOrders: {
+            value: row.fields[3].value,
+            displayValue: row.fields[3].displayValue
+          }
+        };
+      }),
+      inventoriedParts: formData.inventoriedParts.map(function (row) {
+        return {
+          part: {
+            value: row.fields[0].value,
+            displayValue: row.fields[0].displayValue
+          },
+          location: {
+            value: row.fields[1].value,
+            displayValue: row.fields[1].displayValue
+          },
+          quantity: {
+            value: row.fields[2].value
+          }
+        };
+      }),
+      nonInventoriedParts: formData.nonInventoriedParts.map(function (row) {
+        return {
+          partDescription: {
+            value: row.fields[0].value
+          },
+          pricePerUnit: {
+            value: row.fields[1].value
+          },
+          quantity: {
+            value: row.fields[2].value
+          }
+        };
+      }),
+      tools: formData.tools.map(function (row) {
+        return {
+          tool: {
+            value: row.fields[0].value,
+            displayValue: row.fields[0].displayValue
+          },
+          calibrationDate: {
+            value: row.fields[1].value
+          },
+          modelNumber: {
+            value: row.fields[2].value
+          },
+          manufacturer: {
+            value: row.fields[3].value
+          },
+          serialNumber: {
+            value: row.fields[4].value
+          }
+        }
+      }),
+      checklists: formData.checklists.reduce(function (acc, row) {
+        if (row) {
+          acc.push({
+            questions: row.questions.map(function (question) {
+              return {
+                value: question.value
+              };
+            })
+          });
+        }
+
+        return acc;
+      }, [])
+    };
+  }
+
+  return {
+    buildFormData: buildFormData,
+    buildGeneralPanel: buildGeneralPanel,
+    buildInventoriedPartsPanel: buildInventoriedPartsPanel,
+    buildLaborPanel: buildLaborPanel,
+    buildNonInventoriedPartsPanel: buildNonInventoriedPartsPanel,
+    buildToolsPanel: buildToolsPanel,
+    parseFormData: parseFormData
+  };
+}]]></script>
+        <sys_class_name>sp_angular_provider</sys_class_name>
+        <sys_created_by>sean</sys_created_by>
+        <sys_created_on>2021-03-23 16:35:26</sys_created_on>
+        <sys_id>5d4449022f076010f0e69bacf699b684</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>BulkUpdateService</sys_name>
+        <sys_package display_value="Bulk Update" source="x_441625_bulk">0066748e2f836010f0e69bacf699b6e9</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Bulk Update">0066748e2f836010f0e69bacf699b6e9</sys_scope>
+        <sys_update_name>sp_angular_provider_5d4449022f076010f0e69bacf699b684</sys_update_name>
+        <sys_updated_by>sean</sys_updated_by>
+        <sys_updated_on>2021-03-23 16:35:26</sys_updated_on>
+        <type>directive</type>
+    </sp_angular_provider>
+</record_update>

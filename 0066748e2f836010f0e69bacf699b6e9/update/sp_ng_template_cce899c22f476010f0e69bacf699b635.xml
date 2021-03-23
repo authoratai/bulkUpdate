@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_ng_template">
+    <sp_ng_template action="INSERT_OR_UPDATE">
+        <id>nuvo-dynamic-table</id>
+        <sp_widget display_value="Bulk Update">f31301ce2fc36010f0e69bacf699b6d5</sp_widget>
+        <sys_class_name>sp_ng_template</sys_class_name>
+        <sys_created_by>sean</sys_created_by>
+        <sys_created_on>2021-03-23 18:05:34</sys_created_on>
+        <sys_id>cce899c22f476010f0e69bacf699b635</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>nuvo-dynamic-table</sys_name>
+        <sys_package display_value="Bulk Update" source="x_441625_bulk">0066748e2f836010f0e69bacf699b6e9</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Bulk Update">0066748e2f836010f0e69bacf699b6e9</sys_scope>
+        <sys_update_name>sp_ng_template_cce899c22f476010f0e69bacf699b635</sys_update_name>
+        <sys_updated_by>sean</sys_updated_by>
+        <sys_updated_on>2021-03-23 18:05:34</sys_updated_on>
+        <template><![CDATA[<div class="table-responsive">
+  <table id="{{table.id}}" class="table">
+    <thead>
+      <tr>
+        <th ng-repeat="header in table.headers track by $index">{{header}}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr id="{{row.id}}" ng-repeat="row in table.rows track by $index" ng-init="rowIndex = $index">
+        <td ng-repeat="field in row.fields track by $index" ng-init="fieldIndex = $index" ng-style="field.style">
+          <div ng-if="field.tag == 'input'">
+            <div class="input-group" ng-if="field.type == 'currency'">
+              <div class="input-group-addon input-group-select" style="min-width: 60px;">
+                <span style="position: relative;">
+                  <select id="{{row.id}}.{{field.id}}.currency_code" class="form-control" style="border-bottom-left-radius: 3px; border-top-left-radius: 3px; padding: 5px 25px 5px 10px;">
+                    <option value="USD" selected="selected">$</option>
+                    <option value="CHF">CHF</option>
+                    <option value="JPY">¥</option>
+                    <option value="EUR">€</option>
+                  </select>
+                </span>
+              </div>
+              <input id="{{row.id}}.{{field.id}}" class="form-control" type="text" ng-model="field.value" ng-model-options="{ updateOn: 'blur' }" ng-change="onFieldChange(rowIndex, fieldIndex)" ng-required="field.mandatory" ng-disabled="field.disabled" />
+            </div>
+            <div ng-if="field.type == 'date' || field.type == 'datetime'">
+              <sp-date-picker id="{{row.id}}.{{field.id}}" field="field" sn-include-time="field.type == 'datetime'" sn-disabled="field.disabled" ng-model="field.value" ng-model-options="{ getterSetter: true }" ng-change="onFieldChange(rowIndex, fieldIndex)" ng-required="field.mandatory"></sp-date-picker>
+            </div>
+            <div ng-if="field.type == 'number'">
+              <input id="{{row.id}}.{{field.id}}" class="form-control" type="{{field.type}}" min="{{field.min}}" max="{{field.max}}" ng-model="field.value" ng-change="onFieldChange(rowIndex, fieldIndex)" ng-required="field.mandatory" ng-disabled="field.disabled" />
+            </div>
+            <div ng-if="field.type != 'currency' && field.type != 'date' && field.type != 'datetime' && field.type != 'number'">
+              <input id="{{row.id}}.{{field.id}}" class="form-control" type="{{field.type}}" ng-model="field.value" ng-model-options="{ updateOn: 'blur' }" ng-change="onFieldChange(rowIndex, fieldIndex)" ng-required="field.mandatory" ng-disabled="field.disabled" />
+            </div>
+          </div>
+          <div style="margin-right: 20px; position: relative;" ng-if="field.tag == 'reference'">
+            <div ng-if="!field.dynamic">
+              <sn-record-picker id="{{row.id}}.{{field.id}}" field="field" table="field.table" default-query="field.query" display-field="field.displayField" display-fields="field.displayFields" value-field="field.valueField" search-fields="field.searchFields" multiple="field.multiple" sn-disabled="field.disabled" ng-change="onFieldChange(rowIndex, fieldIndex)" ng-required="field.mandatory"></sn-record-picker>
+            </div>
+            <div ng-if="field.dynamic">
+              <div class="flex-row items-center">
+                <sn-record-picker id="{{row.id}}.{{field.id}}" style="position: absolute; top: 0px;" field="field" table="field.table" default-query="field.query" display-field="field.displayField" display-fields="field.displayFields" value-field="field.valueField" search-fields="field.searchFields" multiple="field.multiple" sn-disabled="field.disabled" ng-show="!field.editMode" ng-change="onFieldChange(rowIndex, fieldIndex)" ng-required="field.mandatory"></sn-record-picker>
+                <input id="{{row.id}}.{{field.id}}" class="form-control" style="position: absolute; top: 0px;" type="{{field.type}}" ng-show="field.editMode" ng-model="field.value" ng-model-options="{ updateOn: 'blur' }" ng-change="onFieldChange(rowIndex, fieldIndex)" ng-required="field.mandatory" ng-disabled="field.disabled" />
+                <button class="btn btn-default btn-link" style="position: absolute; right: -30px; top: 0px;" ng-click="field.editMode = field.editMode == true ? false : true">
+                  <span class="fa fa-pencil"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div ng-if="field.tag == 'actions'">
+            <div class="flex-row items-center">
+              <button class="btn btn-default btn-icon" ng-click="table.addRow(table)">
+                <span class="fa fa-plus"></span>
+              </button>
+              <button class="btn btn-danger btn-icon m-l-sm" ng-click="table.removeRow(table, row.id)" ng-disabled="table.rows.length === 1">
+                <span class="fa fa-times"></span>
+              </button>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>]]></template>
+    </sp_ng_template>
+</record_update>

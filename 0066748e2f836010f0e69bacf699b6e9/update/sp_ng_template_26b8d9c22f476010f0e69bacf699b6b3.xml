@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_ng_template">
+    <sp_ng_template action="INSERT_OR_UPDATE">
+        <id>nuvo-checklist-item</id>
+        <sp_widget display_value="Bulk Update">f31301ce2fc36010f0e69bacf699b6d5</sp_widget>
+        <sys_class_name>sp_ng_template</sys_class_name>
+        <sys_created_by>sean</sys_created_by>
+        <sys_created_on>2021-03-23 18:04:59</sys_created_on>
+        <sys_id>26b8d9c22f476010f0e69bacf699b6b3</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>nuvo-checklist-item</sys_name>
+        <sys_package display_value="Bulk Update" source="x_441625_bulk">0066748e2f836010f0e69bacf699b6e9</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Bulk Update">0066748e2f836010f0e69bacf699b6e9</sys_scope>
+        <sys_update_name>sp_ng_template_26b8d9c22f476010f0e69bacf699b6b3</sys_update_name>
+        <sys_updated_by>sean</sys_updated_by>
+        <sys_updated_on>2021-03-23 18:04:59</sys_updated_on>
+        <template><![CDATA[<div class="checklist-item">
+  <div class="item-question" ng-class="{ 'item-question-with-label': question.type == 4 || (question.expected_answer != null && question.expected_answer != '') }">
+    <div>{{question.name}}</div>
+    <div ng-if="question.type == 1">
+      <div class="on-off-toggle">
+        <input id="{{question.detailId}}" class="on-off-toggle-checkbox" type="checkbox" ng-model="question.value" ng-click="question.value = question.value == 'Pass' ? 'Fail' : 'Pass'" ng-checked="question.value == 'Pass'" />
+        <label class="on-off-toggle-label" for="{{question.detailId}}">
+          <span class="on-off-toggle-inner" data-content="{{question.value}}"></span>
+          <span class="on-off-toggle-switch"></span>
+        </label>
+      </div>
+    </div>
+    <div ng-if="question.type == 2">
+      <input id="{{question.detailId}}" class="form-control input-item" type="text" ng-model="question.value" />
+    </div>
+    <div ng-if="question.type == 3">
+      <div class="on-off-toggle">
+        <input id="{{question.detailId}}" class="on-off-toggle-checkbox" type="checkbox" ng-model="question.value" ng-click="question.value = question.value == 'Yes' ? 'No' : 'Yes'" ng-checked="question.value == 'Yes'" />
+        <label class="on-off-toggle-label" for="{{question.detailId}}">
+          <span class="on-off-toggle-inner" data-content="{{question.value}}"></span>
+          <span class="on-off-toggle-switch"></span>
+        </label>
+      </div>
+    </div>
+    <div ng-if="question.type == 4">
+      <input id="{{question.detailId}}" class="form-control range-item" type="number" min="{{question.lower_range}}" max="{{question.upper_range}}" ng-model="question.value" />
+    </div>
+    <div ng-if="question.type == 6">
+      <div class="radio">
+        <input id="{{question.detailId}}" name="{{question.detailId}}" type="radio" ng-model="question.value" ng-value="Yes" />
+        <label for="{{question.detailId}}">${EAM_MM_WO_BULK_EDIT_YES}</label>
+        <input id="{{question.detailId}}" name="{{question.detailId}}" type="radio" ng-model="question.value" ng-value="No" />
+        <label for="{{question.detailId}}">${EAM_MM_WO_BULK_EDIT_NO}</label>
+        <input id="{{question.detailId}}" name="{{question.detailId}}" type="radio" ng-model="question.value" ng-value="N/A" />
+        <label for="{{question.detailId}}">N/A</label>
+      </div>
+    </div>
+    <div ng-if="question.type == 7">
+      <div class="radio">
+        <input id="{{question.detailId}}" name="{{question.detailId}}" type="radio" ng-model="question.value" ng-value="Pass" />
+        <label for="{{question.detailId}}">${EAM_MM_WO_BULK_EDIT_PASS}</label>
+        <input id="{{question.detailId}}" name="{{question.detailId}}" type="radio" ng-model="question.value" ng-value="Fail" />
+        <label for="{{question.detailId}}">${EAM_MM_WO_BULK_EDIT_FAIL}</label>
+        <input id="{{question.detailId}}" name="{{question.detailId}}" type="radio" ng-model="question.value" ng-value="N/A" />
+        <label for="{{question.detailId}}">N/A</label>
+      </div>
+    </div>
+  </div>
+  <div class="item-label" ng-if="question.type == 4 || (question.expected_answer != null && question.expected_answer != '')">
+    <div class="flex-row items-center" ng-if="question.type == 4">
+      <span>${EAM_MM_PAGE_LOWER_RANGE} {{question.lower_range}}</span>&nbsp;&nbsp;
+      <span>${EAM_MM_PAGE_UPPER_RANGE} {{question.upper_range}}</span>
+    </div>
+    <div ng-if="question.expected_answer != null && question.expected_answer != ''">
+      <span>${EAM_MM_PAGE_EXPECTED_ANS} {{question.expected_answer}}</span>
+    </div>
+  </div>
+</div>]]></template>
+    </sp_ng_template>
+</record_update>
